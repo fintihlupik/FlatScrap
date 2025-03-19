@@ -225,7 +225,7 @@ class TecnocasaScraper:
                     self.logger.exception(f"Ocurrió un error durante el scraping: {str(e)}")
                     break  # Salir en caso de error crítico
         finally:
-            self.safe_close()  # Asegurarse de que el driver se cierre incluso si ocurre un error
+            self.close()  # Asegurarse de que el driver se cierre incluso si ocurre un error
         self.close()  # Asegurarse de que el driver se cierre incluso si ocurre un error    
         return ["Scraping process completed"]  # Return a list with a message
 
