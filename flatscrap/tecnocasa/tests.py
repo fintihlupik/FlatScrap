@@ -1,6 +1,6 @@
 from django.test import TestCase
 from unittest.mock import patch, MagicMock
-from tecnocasa.services.pisoscrape import TecnocasaScraper
+from flatscrap.tecnocasa.services.pisoscrapeChrome import TecnocasaScraper
 from tecnocasa.models import Property
 import logging
 from selenium.common.exceptions import TimeoutException

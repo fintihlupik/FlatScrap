@@ -1,166 +1,3 @@
-import undetected_chromedriver as uc
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-from django.utils import timezone
-from your_app.models import Property
-import time
-import random
-
-class TecnocasaScraper:
-    def __init__(self):
-        self.driver = self.configure_driver()
-
-    def configure_driver(self):
-        options = uc.ChromeOptions()
-        options.add_argument("--disable-blink-features=AutomationControlled")
-        return uc.Chrome(options=options)
-
-    def handle_cookies(self):
-        WebDriverWait(self.driver, 10).until(
-            EC.element_to_be_clickable((By.CSS_SELECTOR, ".btn-default.deny-all-btn"))
-        ).click()
-
-    def order_by_newest(self):
-        WebDriverWait(self.driver, 10).until(
-            EC.element_to_be_clickable((By.CSS_SELECTOR, ".ordina"))
-        ).click() 
-        self.driver.find_element(By.XPATH, "//span[text()='Más recientes']").click() 
-
-    def process_page(self):
-        WebDriverWait(self.driver, 10).until(
-            EC.presence_of_element_located((By.CSS_SELECTOR, ".property-listing"))
-        )
-        
-        for card in self.driver.find_elements(By.CSS_SELECTOR, ".property-card"):
-            title = card.find_element(By.CSS_SELECTOR, ".property-title").text
-            price = card.find_element(By.CSS_SELECTOR, ".price").text
-            location = card.find_element(By.CSS_SELECTOR, ".location").text
-            url = card.find_element(By.CSS_SELECTOR, "a.property-link").get_attribute("href")
-            
-            self.update_or_create_property(title, price, location, url)
-
-    def update_or_create_property(self, title, price, location, url):
-        property, created = Property.objects.update_or_create(
-            url=url,
-            defaults={
-                'title': title,
-                'price': price,
-                'location': location,
-                'last_updated': timezone.now()
-            }
-        )
-        if created:
-            property.first_seen = timezone.now()
-            property.save()
-            return f"New property added: {title}"
-        else:
-            return f"Property updated: {title}"
-
-    def go_to_next_page(self):
-        try:
-            next_btn = self.driver.find_element(By.CSS_SELECTOR, "a.pagination-next:not(.disabled)")
-            next_btn.click()
-            time.sleep(random.uniform(2, 4))
-            return True
-        except:
-            return False
-
-    def scrape(self):
-        self.driver.get("https://www.tecnocasa.es/venta/piso/comunidad-de-madrid/madrid.html/")
-        self.handle_cookies()
-        
-        while True:
-            yield from self.process_page()
-            if not self.go_to_next_page():
-                break
-
-    def close(self):
-        self.driver.quit()
-
-
-
-
-from django.core.management.base import BaseCommand
-from flatscrap.tecnocasa.services.pisoscrapeChrome import TecnocasaScraper
-
-class Command(BaseCommand):
-    help = 'Ejecuta el scraper de Tecnocasa para obtener propiedades'
-    
-    def add_arguments(self, parser):
-        parser.add_argument(
-            '--silent',
-            action='store_true',
-            help='Ejecutar en modo silencioso (sin output)'
-        )
-
-    def handle(self, *args, **options):
-        scraper = TecnocasaScraper(verbose=not options['silent'])
-        try:
-            scraper.scrape()
-        except Exception as e:
-            self.stdout.write(self.style.ERROR(f'❌ Error durante el scraping: {str(e)}'))
-        finally:
-            scraper.close()
-            self.stdout.write(self.style.SUCCESS('\nOperación completada'))
-
-
-
-def process_page(self):
-    try:
-        self.logger.debug("Iniciando procesamiento de página")
-        
-        if self.driver.current_url.endswith("/madrid.html"):
-            self.logger.debug("Ordenando por más recientes")
-            self.order_by_newest()
-            
-        WebDriverWait(self.driver, 10).until(
-            EC.presence_of_element_located((By.CSS_SELECTOR, ".estates-list"))
-        )
-        self.logger.debug("Contenedor de propiedades encontrado")
-        
-        cards = self.driver.find_elements(By.CSS_SELECTOR, ".estate-card")
-        self.logger.info(f"Encontradas {len(cards)} propiedades en la página")
-        
-        if not cards:
-            self.logger.warning("¡No se encontraron propiedades en la página!")
-            return []
-
-        for index, card in enumerate(cards, 1):
-            try:
-                self.logger.debug(f"Procesando propiedad {index}/{len(cards)}")
-                
-                # Captura de pantalla de depuración
-                card.screenshot(f"debug_propiedad_{index}.png")
-                
-                # Extracción de datos con verificación
-                location_element = card.find_element(By.CSS_SELECTOR, "h4.estate-card-subtitle")
-                location = location_element.text if location_element else "N/A"
-                
-                price_element = card.find_element(By.CSS_SELECTOR, ".estate-card-current-price")
-                price = price_element.text if price_element else "N/A"
-                
-                surface_element = card.find_element(By.CSS_SELECTOR, ".estate-card-surface span")
-                surface = surface_element.text if surface_element else "N/A"
-                
-                url_element = card.find_element(By.CSS_SELECTOR, "a")
-                url = url_element.get_attribute('href') if url_element else "N/A"
-                
-                self.logger.info(f"Datos extraídos - Ubicación: {location}, Precio: {price}, Superficie: {surface}, URL: {url}")
-                self.update_or_create_property(price, location, surface, "Apartment", "Tecnocasa", url)
-                
-            except Exception as e:
-                self.logger.error(f"Error procesando propiedad {index}: {str(e)}", exc_info=True)
-                continue
-                
-        return True
-        
-    except Exception as e:
-        self.logger.critical(f"Error crítico en process_page: {str(e)}", exc_info=True)
-        self.driver.save_screenshot("error_page.png")
-        raise
-
-
 import random
 from selenium import webdriver      # Módulo principal de Selenium para controlar navegadores
 from selenium.webdriver.common.by import By     # Define métodos para localizar elementos (ID, CLASS_NAME, XPATH, etc.)
@@ -183,11 +20,9 @@ from selenium.common.exceptions import TimeoutException
 
 class TecnocasaScraper:
     def __init__(self):
-        # self.driver = self.configure_driver()
-        # self._setup_logger()
-        self.driver = None  # Initialize as None
-        self._setup_logger()
         self.driver = self.configure_driver()
+        self._setup_logger()
+    
 
     def _setup_logger(self):
         self.logger = logging.getLogger("TecnocasaScraper")
@@ -239,6 +74,9 @@ class TecnocasaScraper:
     def process_page(self):
         try:
             self.logger.debug("Iniciando procesamiento de página")
+            # if self.driver.current_url.endswith("150000"):
+            #     self.logger.debug("Ordenando por más recientes")
+            #     self.order_by_newest()
 
             WebDriverWait(self.driver, 10).until(
                 EC.presence_of_element_located((By.CSS_SELECTOR, ".estates-list")))
@@ -340,11 +178,16 @@ class TecnocasaScraper:
                 return False
             
             self.logger.info(f"Navegación a la página siguiente exitosa. Nueva URL: {self.driver.current_url}")
+            # self.driver.get(next_url)
+            #time.sleep(random.uniform(2, 4))  # Espera aleatoria para evitar detección
+            # Verifica carga correcta
             WebDriverWait(self.driver, 15).until(
                 EC.presence_of_element_located((By.CSS_SELECTOR, ".estates-list"))
             )
             return True
-
+        # except:
+        #     print("No more pages to scrape.")
+        #     return False
         except Exception as e:
             self.logger.error(f"Error en paginación: {str(e)}", exc_info=True)
             self.driver.save_screenshot("pagination_error.png")
@@ -352,22 +195,85 @@ class TecnocasaScraper:
         
     def scrape(self):
         self.logger.info("Iniciando proceso de scraping")
-        self.safe_close()  # Asegurarse de que el driver se cierre incluso si ocurre un error 
+        try:
+            self.logger.info("Iniciando proceso de scraping")
 
-    def safe_close(self):
-        """Safely close the driver and clean up resources"""
+            if self.driver is None:
+                self.logger.error("Driver not initialized. Aborting scrape.")
+                return False
+
+            base_url = "https://www.tecnocasa.es/venta/piso/comunidad-de-madrid/madrid.html"
+            min_price = "50000"
+            max_price = "150000"
+            url = f"{base_url}?region=cma&min_price={min_price}&max_price={max_price}"
+            self.logger.debug(f"URL objetivo: {url}")
+            self.driver.get(url)
+            self.handle_cookies()
+
+            while True:
+                try:
+                    self.process_page()
+                    self.logger.debug("Procesamiento de página completado")
+                    
+                    # Aquí verificamos si el botón "Siguiente" es accesible
+                    if not self.go_to_next_page():
+                        self.logger.info("No hay más páginas. Terminando el scraping.")
+                        break  # Salir del bucle si no se encuentra el botón de "Siguiente"
+                except Exception as e:
+                    self.logger.exception(f"Ocurrió un error durante el scraping: {str(e)}")
+                    break  # Salir en caso de error crítico
+        finally:
+            self.close()  # Asegurarse de que el driver se cierre incluso si ocurre un error
+        self.close()  # Asegurarse de que el driver se cierre incluso si ocurre un error    
+        return ["Scraping process completed"]  # Return a list with a message
+
+ 
+
+    def close(self):
         try:
             if hasattr(self, 'driver') and self.driver is not None:
                 self.logger.debug("Cerrando el navegador...")
-                
-                # Store a temporary reference and set self.driver to None first
-                driver_tmp = self.driver
-                self.driver = None
-                
-                # Now close the driver using the temporary reference
-                driver_tmp.quit()
+                self.driver.quit()
                 self.logger.info("Navegador cerrado correctamente.")
+                self.driver = None  # Inmediatamente establecer como None
         except Exception as e:
-            self.logger.error(f"Error al cerrar el navegador: {str(e)}")
+            self.logger.error(f"Error al cerrar el navegador: {e}", exc_info=True)
         finally:
-            self.driver = None
+            self.driver = None  # Asegurar que el driver queda como None
+
+
+    # def close2(self):
+    #     """Safely close the driver and clean up resources"""
+    #     try:
+    #         if hasattr(self, 'driver') and self.driver is not None:
+    #             self.logger.debug("Cerrando el navegador...")
+                
+    #             # Store a temporary reference and set self.driver to None first
+    #             driver_tmp = self.driver
+    #             self.driver = None
+                
+    #             # Now close the driver using the temporary reference
+    #             try:
+    #                 driver_tmp.quit()
+    #             except Exception as e:
+    #                 self.logger.warning(f"Error al ejecutar driver_tmp.quit(): {str(e)}")
+                
+    #             # Clear any circular references
+    #             if hasattr(driver_tmp, "service") and driver_tmp.service:
+    #                 driver_tmp.service.process = None
+                    
+    #             self.logger.info("Navegador cerrado correctamente.")
+    #     except Exception as e:
+    #         self.logger.error(f"Error al cerrar el navegador: {str(e)}")
+    #     finally:
+    #         self.driver = None
+
+
+# try:
+#     url = "https://www.tecnocasa.es/venta/piso/comunidad-de-madrid/madrid.html?min_price=50000&max_price=150000"
+#     #driver.get("https://www.tecnocasa.es/venta/piso/comunidad-de-madrid/madrid.html/")
+
+#     # input_precios = driver.find_elements(By.CSS_SELECTOR, ".col-6 .my-input input.form-control")# el espacio = "dentro de"
+#     # input_precios[0].send_keys("50000")
+#     # input_precios[1].send_keys("150000")
+#     # input_precios[1].send_keys(Keys.ENTER)

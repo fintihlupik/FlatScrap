@@ -15,16 +15,16 @@ from tecnocasa.models import Property
 from logging.handlers import RotatingFileHandler
 from selenium.common.exceptions import ElementClickInterceptedException
 from selenium.common.exceptions import TimeoutException
+from selenium.webdriver.firefox.service import Service
+from selenium.webdriver.firefox.options import Options
 
 
 
 class TecnocasaScraper:
     def __init__(self):
-        # self.driver = self.configure_driver()
-        # self._setup_logger()
-        self.driver = None  # Initialize as None
-        self._setup_logger()
         self.driver = self.configure_driver()
+        self._setup_logger()
+    
 
     def _setup_logger(self):
         self.logger = logging.getLogger("TecnocasaScraper")
@@ -54,9 +54,22 @@ class TecnocasaScraper:
         self.logger.debug("Nivel de logging establecido en DEBUG")
 
     def configure_driver(self):
-        options = uc.ChromeOptions()
-        options.add_argument("--disable-blink-features=AutomationControlled")
-        return uc.Chrome(options=options)
+        # options = uc.ChromeOptions()
+        # options.add_argument("--disable-blink-features=AutomationControlled")
+        # return uc.Chrome(options=options)
+    
+        options = Options()
+        options.add_argument('--headless')  # Ejecutar en modo headless
+        options.add_argument('--no-sandbox')  # Requerido para algunos servidores
+        options.add_argument('--disable-dev-shm-usage')  # Para evitar errores de memoria
+
+        # Proporcionar la ruta del binario de Firefox
+        #options.binary_location = "C:\\Program Files\\Mozilla Firefox\\firefox.exe" ######################## Ruta de Windows quitar
+        # Configurar el servicio de GeckoDriver
+        service = Service("/usr/local/bin/geckodriver")
+        #service = Service("C:\\Program Files\\geckodriver\\geckodriver.exe") ######################## Ruta de Windows quitar
+        # Crear el WebDriver de Firefox
+        return webdriver.Firefox(service=service, options=options)
     
     def handle_cookies(self):
         try:
