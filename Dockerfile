@@ -41,7 +41,8 @@ RUN apt-get update && apt-get install -y \
     gcc \
     python3-dev \
     default-libmysqlclient-dev \ 
-    && rm -rf /var/lib/apt/lists/*
+    default-mysql-client \
+    && rm -rf /var/lib/apt/lists/* 
 
 # Configure Fontconfig to avoid cache errors
 RUN mkdir -p /tmp/cache/fontconfig && chmod 777 /tmp/cache/fontconfig

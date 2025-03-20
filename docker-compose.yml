@@ -30,10 +30,12 @@ services:
       environment:
         MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
         MYSQL_DATABASE: ${DB_NAME}
-        # MYSQL_USER: ${DB_USER}
-        # MYSQL_PASSWORD: ${DB_PASSWORD}
-      
-        # Puerto de MySQL      
+      volumes:
+      - mysql_data:/var/lib/mysql  # Volumen persistente dentro del contenedor mysql: los datos no iran al sistema de archivos del contenedor sino a un volumen
+
+volumes:
+  mysql_data:
+    driver: local   # el volumen se almacenará en el sistema de archivos local de Docker (en la máquina que ejecuta Docker)
 
 
 # The commented out section below is an example of how to define a PostgreSQL
