@@ -44,6 +44,29 @@ RUN apt-get update && apt-get install -y \
     default-mysql-client \
     && rm -rf /var/lib/apt/lists/* 
 
+# Instalar cron y herramientas adicionales
+RUN apt-get update && apt-get install -y \
+cron \
+vim \
+&& rm -rf /var/lib/apt/lists/*
+
+# Crear directorios necesarios y asignar permisos para cron
+RUN mkdir -p /var/run /var/log && \
+chmod 0755 /var/run /var/log && \
+touch /var/run/crond.pid && \
+chmod 0644 /var/run/crond.pid && \
+touch /var/log/cron.log && \
+chmod 0644 /var/log/cron.log
+
+# Copia el archivo local cronfile (que contiene las reglas de cron) al directorio /etc/cron.d/ con el nombre crape-cron.
+COPY cronfile /etc/cron.d/scrape-cron
+
+# Dar permisos adecuados al cronfile
+RUN chmod 0644 /etc/cron.d/scrape-cron
+
+# Registrar el cronjob
+RUN crontab /etc/cron.d/scrape-cron
+
 # Configure Fontconfig to avoid cache errors
 RUN mkdir -p /tmp/cache/fontconfig && chmod 777 /tmp/cache/fontconfig
 ENV FONTCONFIG_PATH=/tmp/cache/fontconfig
@@ -82,4 +105,6 @@ COPY . .
 EXPOSE 8000
 
 # Default command to keep the container running
-CMD ["tail", "-f", "/dev/null"]
+# CMD ["tail", "-f", "/dev/null"]
+
+CMD ["cron", "-f"]

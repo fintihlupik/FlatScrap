@@ -1,0 +1,1 @@
+*/2 * * * * export DATABASE_HOST=flatscrap-db-1 && export DATABASE_USER=root && /usr/local/bin/python /app/flatscrap/manage.py tecnopiso >> /var/log/cron.log 2>&1
