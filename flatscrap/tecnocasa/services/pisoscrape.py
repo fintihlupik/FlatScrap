@@ -37,7 +37,7 @@ class TecnocasaScraper:
         
         # Handler para archivo (rotativo)
         file_handler = RotatingFileHandler(
-            'tecnopiso.log',
+            '/app/flatscrap/tecnocasa/tecnopiso.log',
             maxBytes=1024*1024*5,  # 5 MB
             backupCount=3
         )
@@ -114,7 +114,7 @@ class TecnocasaScraper:
                         type = "Apartment"
                         agency = "Tecnocasa"
 
-                        self.logger.info(f"Datos extraídos - Ubicación: {location}, Precio: {price}, Superficie: {surface}, URL: {url}")
+                        #self.logger.info(f"Datos extraídos - Ubicación: {location}, Precio: {price}, Superficie: {surface}, URL: {url}")
                         self.update_or_create_property(price, location, surface, type, agency, url)
                     except Exception as e:
                         self.logger.error(f"Error en tarjeta: {str(e)}", exc_info=True)
@@ -126,24 +126,39 @@ class TecnocasaScraper:
         
 
     def update_or_create_property(self, price, location, surface, type, agency, url):
-        # update_or_create es de Django ORM, objects es el gestor predeterminado para interactuar con la bd.
-        property, created = Property.objects.update_or_create( # usa asignacion multiple. update_or_create() devuelve una tupla con: (objeto, booleano)
-            url=url, # Campo único usado como identificador. Django lo usa para saber si el objeto ya existe, lo busca en bbdd
-            defaults={
-                'price': price,
-                'location': location,
-                'surface': surface,
-                'last_updated': timezone.now()
-            }
-        )
-        if created:
-            property.first_seen = timezone.now()
-            property.type = type
-            property.agency = agency
-            property.save()
-            return f"New property added: {location}"
-        else:
-            return f"Property updated: {location}"
+        property = Property.objects.filter(url=url).first()
+        
+        if property:  
+            updated = False
+            if property.price != price:
+                property.price = price
+                updated = True
+            if property.surface != surface:
+                property.surface = surface
+                updated = True
+
+            if updated:
+                property.last_updated = timezone.now()  
+                property.save()
+                self.logger.info(f"Property updated: - {location} , - {price}, - {surface}, - {url}")
+                return f"Property updated: {location}"
+            else:
+                self.logger.info(f"No changes detected for property: - {location}, - {url}")
+                return f"No changes for property: {location}"
+        
+        else:  # Si el objeto no existe
+            property = Property.objects.create(
+                url=url,
+                price=price,
+                location=location,
+                surface=surface,
+                type=type,
+                agency=agency,
+                first_seen=timezone.now(),
+                last_updated=timezone.now()
+            )
+            self.logger.info(f"New property added: - {location}, - {price}, - {surface}, - {url}")
+            return f"New property added: {location}"  
 
         
     def go_to_next_page(self):
@@ -175,13 +190,7 @@ class TecnocasaScraper:
             self.driver.execute_script("arguments[0].scrollIntoView(true);", next_button)
             time.sleep(1)  # Pequeña pausa para asegurar que el desplazamiento se complete
 
-            # Intentar hacer clic usando diferentes métodos
-            try:
-                self.logger.debug("Haciendo clic en el botón 'Siguiente'...")
-                next_button.click()
-            except ElementClickInterceptedException:
-                self.logger.warning("Clic interceptado, intentando con JavaScript")
-                self.driver.execute_script("arguments[0].click();", next_button)
+            self.driver.execute_script("arguments[0].click();", next_button)
             
             # Esperar a que la URL cambie
             WebDriverWait(self.driver, 20).until(EC.url_changes(current_page))
@@ -193,16 +202,10 @@ class TecnocasaScraper:
                 return False
             
             self.logger.info(f"Navegación a la página siguiente exitosa. Nueva URL: {self.driver.current_url}")
-            # self.driver.get(next_url)
-            #time.sleep(random.uniform(2, 4))  # Espera aleatoria para evitar detección
-            # Verifica carga correcta
             WebDriverWait(self.driver, 15).until(
                 EC.presence_of_element_located((By.CSS_SELECTOR, ".estates-list"))
             )
             return True
-        # except:
-        #     print("No more pages to scrape.")
-        #     return False
         except Exception as e:
             self.logger.error(f"Error en paginación: {str(e)}", exc_info=True)
             self.driver.save_screenshot("pagination_error.png")
@@ -256,39 +259,3 @@ class TecnocasaScraper:
         finally:
             self.driver = None  # Asegurar que el driver queda como None
 
-
-    # def close2(self):
-    #     """Safely close the driver and clean up resources"""
-    #     try:
-    #         if hasattr(self, 'driver') and self.driver is not None:
-    #             self.logger.debug("Cerrando el navegador...")
-                
-    #             # Store a temporary reference and set self.driver to None first
-    #             driver_tmp = self.driver
-    #             self.driver = None
-                
-    #             # Now close the driver using the temporary reference
-    #             try:
-    #                 driver_tmp.quit()
-    #             except Exception as e:
-    #                 self.logger.warning(f"Error al ejecutar driver_tmp.quit(): {str(e)}")
-                
-    #             # Clear any circular references
-    #             if hasattr(driver_tmp, "service") and driver_tmp.service:
-    #                 driver_tmp.service.process = None
-                    
-    #             self.logger.info("Navegador cerrado correctamente.")
-    #     except Exception as e:
-    #         self.logger.error(f"Error al cerrar el navegador: {str(e)}")
-    #     finally:
-    #         self.driver = None
-
-
-# try:
-#     url = "https://www.tecnocasa.es/venta/piso/comunidad-de-madrid/madrid.html?min_price=50000&max_price=150000"
-#     #driver.get("https://www.tecnocasa.es/venta/piso/comunidad-de-madrid/madrid.html/")
-
-#     # input_precios = driver.find_elements(By.CSS_SELECTOR, ".col-6 .my-input input.form-control")# el espacio = "dentro de"
-#     # input_precios[0].send_keys("50000")
-#     # input_precios[1].send_keys("150000")
-#     # input_precios[1].send_keys(Keys.ENTER)

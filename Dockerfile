@@ -80,6 +80,7 @@ COPY . .
 
 # Expose the port used by the application
 EXPOSE 8000
+EXPOSE 8501 
 
 # Default command to keep the container running
 CMD ["tail", "-f", "/dev/null"]

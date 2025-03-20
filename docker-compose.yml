@@ -15,6 +15,7 @@ services:
       - .:/app  # Vincula tu código con el contenedor
     ports:
       - 8000:8000
+      - 8501:8501
     environment:
       - DATABASE_HOST=flatscrap-db-1
       - DATABASE_PORT=${DB_PORT}
