@@ -3,6 +3,9 @@ import time
 import django
 import os
 import sys
+import requests
+
+
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'flatscrap.settings')
 django.setup()
@@ -45,8 +48,6 @@ def display_changes():
         st.write("### Cambios en la base de datos:")
         for change in st.session_state["changes"]:
             st.write(f"- {change}")
-    elif st.session_state["scraper_initiated"]:  # Solo mostrar este mensaje si se inició el scraper
-        st.write("### Esperando cambios en la base de datos...")
 
 # Ciclo para actualizar la vista de los cambios solo si el scraper está corriendo
 while st.session_state["scraper_running"]:
@@ -59,4 +60,21 @@ if st.session_state["scraper_initiated"] and not st.session_state["scraper_runni
     st.write("### Scraping completado")
 
 
-
+if st.button("Mostrar Database"):
+    st.write('Estos son mis pisos desde mi API:')
+    response = requests.get('http://localhost:8000/tecnocasa/')
+    
+    if response.status_code == 200:
+        properties = response.json()
+        for prop in properties:
+            st.write(f"**Precio**: {prop['price']}") 
+            st.write(f"**Ubicación**: {prop['location']}")
+            st.write(f"**Superficie**: {prop['surface']}")
+            st.write(f"**Tipo**: {prop['type']}")
+            st.write(f"**Agencia**: {prop['agency']}")
+            st.write(f"**URL**: {prop['url']}")
+            st.write(f"**Fecha de primera publicación**: {prop['first_seen']}")
+            st.write(f"**Última actualización**: {prop['last_updated']}")
+            st.write("---")  # Separador entre propiedades
+    else:
+        st.write('No se encontraron pisos') 
