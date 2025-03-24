@@ -1,20 +1,27 @@
 from django.test import TestCase
 from unittest.mock import patch, MagicMock
-from flatscrap.tecnocasa.services.pisoscrapeChrome import TecnocasaScraper
+from .services.pisoscrape import TecnocasaScraper
 from tecnocasa.models import Property
 import logging
 from selenium.common.exceptions import TimeoutException
+from unittest.mock import patch, MagicMock
+from selenium import webdriver
 
 class TecnocasaScraperTestCase(TestCase):
 
     def setUp(self):
-        # Deshabilitar logging durante la ejecución de los tests
-        logging.disable(logging.CRITICAL)
+        logging.disable(logging.CRITICAL) # Deshabilita logging durante la ejecución de los tests
         self.scraper = TecnocasaScraper()
 
+        with patch.object(TecnocasaScraper, 'configure_driver', return_value=self.mock_firefox_driver()):
+            self.scraper = TecnocasaScraper()
+
     def tearDown(self):
-        # Habilitar logging después de la ejecución de cada test
-        logging.disable(logging.NOTSET)
+        logging.disable(logging.NOTSET) # Habilita logging después de la ejecución de cada test
+
+    def mock_firefox_driver(self):
+        mock_driver = MagicMock(spec=webdriver.Firefox) #Crea un mock del driver de Firefox.
+        return mock_driver
 
     @patch('tecnocasa.services.pisoscrape.WebDriverWait')
     def test_handle_cookies(self, mock_wait):

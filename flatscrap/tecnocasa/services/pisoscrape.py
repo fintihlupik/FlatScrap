@@ -1,15 +1,11 @@
 import random
 from selenium import webdriver      # Módulo principal de Selenium para controlar navegadores
 from selenium.webdriver.common.by import By     # Define métodos para localizar elementos (ID, CLASS_NAME, XPATH, etc.)
-from webdriver_manager.chrome import ChromeDriverManager    # Gestiona la descarga automática del ChromeDriver compatible
-from selenium.webdriver.chrome.service import Service       # Configura el servicio que maneja el ChromeDriver
 from selenium.webdriver.support.ui import WebDriverWait     # Permite la espera de elementos en la página
 from selenium.webdriver.support import expected_conditions as EC   # Condiciones predefinidas para usar con WebDriverWait
 import time
 import logging
 from selenium.webdriver.common.keys import Keys
-import undetected_chromedriver as uc
-from selenium.webdriver.chrome.options import Options
 from django.utils import timezone
 from tecnocasa.models import Property
 from logging.handlers import RotatingFileHandler
