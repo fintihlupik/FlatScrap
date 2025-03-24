@@ -6,7 +6,7 @@ FlatScrap es un proyecto diseñado para facilitar la busqueda de propiedades eco
 
 1. Clona este repositorio:
     ```bash
-    git clone https://github.com/finthlupik/FlatScrap.git
+    git clone https://github.com/fintihlupik/FlatScrap.git
     ```
 2. Navega al directorio del proyecto:
     ```bash
@@ -23,12 +23,14 @@ FlatScrap es un proyecto diseñado para facilitar la busqueda de propiedades eco
 
 ## Uso
 
+Antes de nada solicitame las variables de entorno y guardalas en un .env en la raíz del proyecto.
 Este proyecto tiene 3 formas de ejecución:
 
 1. Un simple webscraper:
     ```bash
     docker exec -it flatscrap-server-1 bash
     cd flatscrap
+    python manage.py migrate
     python manage.py tecnopiso
     ```
     para ver la base de datos (contraseña root):
