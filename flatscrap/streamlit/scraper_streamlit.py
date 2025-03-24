@@ -18,10 +18,6 @@ if "scraper_running" not in st.session_state:
     st.session_state["scraper_running"] = False
 
 def parse_new_properties_from_log(log_line):
-    """
-    Parsea los logs para encontrar propiedades nuevas
-    """
-    # Ajusta este patrón según el formato exacto de tus logs
     pattern = r'New property added: (.+)'
     match = re.search(pattern, log_line)
     
@@ -30,9 +26,6 @@ def parse_new_properties_from_log(log_line):
     return None
 
 def run_scraper():
-    """
-    Ejecuta el scraper y captura los logs
-    """
     # Reiniciar lista de propiedades nuevas
     st.session_state["new_properties"] = []
     st.session_state["scraper_running"] = True
@@ -51,7 +44,6 @@ def run_scraper():
             new_prop = parse_new_properties_from_log(line)
             if new_prop:
                 st.session_state["new_properties"].append(new_prop)
-                #st.write(f"Nueva propiedad detectada: {new_prop}")
 
     except subprocess.CalledProcessError as e:
         st.error(f"Error durante el scraping: {e}")

@@ -155,7 +155,7 @@ class TecnocasaScraper:
         
             try:
                 next_button = WebDriverWait(self.driver, 5).until(
-                    EC.element_to_be_clickable((By.XPATH, "//li/a[contains(text(), '>')]")) ##################################################### ENTENDER
+                    EC.element_to_be_clickable((By.XPATH, "//li/a[contains(text(), '>')]")) 
                 )
                 self.logger.debug("Botón 'Siguiente' encontrado.")
             except TimeoutException:
@@ -180,7 +180,7 @@ class TecnocasaScraper:
             WebDriverWait(self.driver, 20).until(EC.url_changes(current_page))
             self.logger.info(f"Página siguiente cargada: {self.driver.current_url}")
             
-            # Verificar que realmente hemos cambiado de página
+            # Verificar que realmente se ha cambiado de página
             if self.driver.current_url == current_page:
                 self.logger.warning("La URL no cambió después de hacer clic en 'siguiente'")
                 return False
@@ -231,7 +231,7 @@ class TecnocasaScraper:
                     self.process_page()
                     self.logger.debug("Procesamiento de página completado")
                     
-                    # Aquí verificamos si el botón "Siguiente" es accesible
+                    # Aquí verificar si el botón "Siguiente" es accesible
                     if not self.go_to_next_page():
                         self.logger.info("No hay más páginas. Terminando el scraping.")
                         break  # Salir del bucle si no se encuentra el botón de "Siguiente"
@@ -242,22 +242,4 @@ class TecnocasaScraper:
             self.close()  # Asegurarse de que el driver se cierre incluso si ocurre un error
         self.close()  # Asegurarse de que el driver se cierre incluso si ocurre un error    
         return ["Scraping process completed"]  # Return a list with a message
-
- 
-
-    # def close(self):
-    #     try:
-    #         if hasattr(self, 'driver') and self.driver is not None:
-    #             self.logger.debug("Cerrando el navegador...")
-    #             self.driver.quit()
-    #             self.logger.info("Navegador cerrado correctamente.")
-    #             self.driver = None  # Inmediatamente establecer como None
-    #     except Exception as e:
-    #         self.logger.error(f"Error al cerrar el navegador: {e}", exc_info=True)
-    #     finally:
-    #         self.driver = None  # Asegurar que el driver queda como None
-
-
-
-
 
