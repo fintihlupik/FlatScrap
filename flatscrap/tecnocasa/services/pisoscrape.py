@@ -13,6 +13,8 @@ from selenium.common.exceptions import ElementClickInterceptedException
 from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.firefox.service import Service
 from selenium.webdriver.firefox.options import Options
+import os
+import signal
 
 
 
@@ -207,6 +209,20 @@ class TecnocasaScraper:
             self.driver.save_screenshot("pagination_error.png")
             return False
         
+
+
+    def close(self):
+        try:
+            if hasattr(self, 'driver') and self.driver is not None:
+                self.logger.debug("Cerrando el navegador...")
+                self.driver.quit()
+                self.logger.info("Navegador cerrado correctamente.")
+                self.driver = None  # Inmediatamente establecer como None
+        except Exception as e:
+            self.logger.error(f"Error al cerrar el navegador: {e}", exc_info=True)
+        finally:
+            self.driver = None  # Asegurar que el driver queda como None
+        
     def scrape(self):
         self.logger.info("Iniciando proceso de scraping")
         try:
@@ -243,15 +259,19 @@ class TecnocasaScraper:
 
  
 
-    def close(self):
-        try:
-            if hasattr(self, 'driver') and self.driver is not None:
-                self.logger.debug("Cerrando el navegador...")
-                self.driver.quit()
-                self.logger.info("Navegador cerrado correctamente.")
-                self.driver = None  # Inmediatamente establecer como None
-        except Exception as e:
-            self.logger.error(f"Error al cerrar el navegador: {e}", exc_info=True)
-        finally:
-            self.driver = None  # Asegurar que el driver queda como None
+    # def close(self):
+    #     try:
+    #         if hasattr(self, 'driver') and self.driver is not None:
+    #             self.logger.debug("Cerrando el navegador...")
+    #             self.driver.quit()
+    #             self.logger.info("Navegador cerrado correctamente.")
+    #             self.driver = None  # Inmediatamente establecer como None
+    #     except Exception as e:
+    #         self.logger.error(f"Error al cerrar el navegador: {e}", exc_info=True)
+    #     finally:
+    #         self.driver = None  # Asegurar que el driver queda como None
+
+
+
+
 
