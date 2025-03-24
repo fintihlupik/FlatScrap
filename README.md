@@ -56,6 +56,13 @@ Este proyecto tiene 3 formas de ejecución:
     ```
     Abre tu navegador en `http://localhost:8501/`.
 
+4. Modo test:
+    ```bash
+    docker exec -it flatscrap-server-1 bash
+    cd flatscrap
+    python manage.py test 
+    ```
+
 ## Contribución
 
 ¡Las contribuciones son bienvenidas! Por favor, sigue estos pasos:
