@@ -106,6 +106,10 @@ EXPOSE 8000
 EXPOSE 8501 
 
 # Default command to keep the container running
-# CMD ["tail", "-f", "/dev/null"]
+CMD ["tail", "-f", "/dev/null"]
 
-CMD ["cron", "-f"]
+# Uncomment to run cron when the container starts (and comment the previous CMD)
+#CMD ["cron", "-f"]
+
+# El comando predeterminado será iniciar ambos servicios (Django y Streamlit)
+#CMD ["sh", "-c", "streamlit run streamlit/scraper_streamlit.py & python manage.py runserver 0.0.0.0:8000"]

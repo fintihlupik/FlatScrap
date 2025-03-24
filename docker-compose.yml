@@ -26,6 +26,7 @@ services:
     depends_on:
       - db  # Asegura que el servicio de base de datos esté listo antes de iniciar la aplicación web
 
+
   db:
       image: mysql:8.0  # Utiliza la imagen oficial de MySQL
       environment:
