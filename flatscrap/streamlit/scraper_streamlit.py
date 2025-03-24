@@ -1,264 +1,97 @@
-# import streamlit as st
-# import time
-# import django
-# import os
-# import sys
-# import requests
-# import subprocess
-
-
-# sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-# os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'flatscrap.settings')
-# django.setup()
-# from tecnocasa.services.pisoscrape import TecnocasaScraper 
-
-
-# if "changes" not in st.session_state:
-#     st.session_state["changes"] = []  # Inicializar!
-# if "scraper_running" not in st.session_state:
-#     st.session_state["scraper_running"] = False  
-# if "scraper_initiated" not in st.session_state:
-#     st.session_state["scraper_initiated"] = False
-
-# # Función personalizada para manejar los logs de cambios en la base de datos
-# def custom_log_handler(message):
-#     if "New property added" in message or "Property updated" in message:
-#         # Añadir el mensaje al session_state para poder visualizarlo en Streamlit
-#         st.session_state["changes"].append(message)
-
-# # Función para ejecutar el scraper
-# def run_scraper():
-#     st.session_state["scraper_running"] = True 
-#     st.session_state["scraper_initiated"] = True
-#     scraper = TecnocasaScraper()
-    
-#     # Sobrescribir el logger del scraper para almacenar cambios en session_state
-#     scraper.logger.info = custom_log_handler  # Aquí sustituyo info por mi función custom_log_handler
-#     scraper.scrape()
-#     st.session_state["scraper_running"] = False 
-
-# st.title("Tecnocasa Property Scraper")
-
-# # Botón para iniciar el scraping
-# if st.button("Iniciar scraping"):
-#     with st.spinner("Ejecutando scraping..."):
-#         run_scraper()
-
-# def display_changes():
-#     if st.session_state["changes"]:
-#         st.write("### Cambios en la base de datos:")
-#         for change in st.session_state["changes"]:
-#             st.write(f"- {change}")
-
-# # Ciclo para actualizar la vista de los cambios solo si el scraper está corriendo
-# while st.session_state["scraper_running"]:
-#     display_changes()  # Mostrar los cambios en la interfaz
-#     time.sleep(1)  # Esperar 1 segundo para volver a comprobar cambios
-
-# # Una vez que el scraper ha terminado, mostramos los cambios finales
-# if st.session_state["scraper_initiated"] and not st.session_state["scraper_running"]:
-#     display_changes()
-#     st.write("### Scraping completado")
-
-
-# if st.button("Mostrar Database"):
-#     st.write('Estos son mis pisos desde mi API:')
-#     response = requests.get('http://localhost:8000/tecnocasa/')
-    
-#     if response.status_code == 200:
-#         properties = response.json()
-#         for prop in properties:
-#             st.write(f"**Precio**: {prop['price']}") 
-#             st.write(f"**Ubicación**: {prop['location']}")
-#             st.write(f"**Superficie**: {prop['surface']}")
-#             st.write(f"**Tipo**: {prop['type']}")
-#             st.write(f"**Agencia**: {prop['agency']}")
-#             st.write(f"**URL**: {prop['url']}")
-#             st.write(f"**Fecha de primera publicación**: {prop['first_seen']}")
-#             st.write(f"**Última actualización**: {prop['last_updated']}")
-#             st.write("---")  # Separador entre propiedades
-#     else:
-#         st.write('No se encontraron pisos') 
-
-
-
-#  NO MUESTRA EN LA WEVWEB
 import streamlit as st
-import time
-import django
+import subprocess
+import re
+import requests
 import os
 import sys
-import requests
-import subprocess
-import time
+import django
 
-
+# Configuración de Django
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'flatscrap.settings')
 django.setup()
-from tecnocasa.services.pisoscrape import TecnocasaScraper 
 
-
-if "changes" not in st.session_state:
-    st.session_state["changes"] = []  # Inicializar!
+# Inicializar session state
+if "new_properties" not in st.session_state:
+    st.session_state["new_properties"] = []
 if "scraper_running" not in st.session_state:
-    st.session_state["scraper_running"] = False  
-if "scraper_initiated" not in st.session_state:
-    st.session_state["scraper_initiated"] = False
-
-# Función personalizada para manejar los logs de cambios en la base de datos
-def custom_log_handler(message):
-    if "New property added" in message or "Property updated" in message:
-        # Añadir el mensaje al session_state para poder visualizarlo en Streamlit
-        st.session_state["changes"].append(message)
-
-def display_changes():
-    if st.session_state["changes"]:
-        st.write("### Cambios en la base de datos:")
-        for change in st.session_state["changes"]:
-            st.write(f"- {change}")
-
-# Función para ejecutar el scraper
-def run_scraper():
-    st.session_state["scraper_running"] = True 
-    st.session_state["scraper_initiated"] = True
-
-    # Ejecutar el scraper como un proceso en segundo plano
-    scraper_process = subprocess.Popen(["python", "manage.py", "tecnopiso"])  # Esto ejecuta el comando en un proceso separado
-
-    # Mientras el scraper esté corriendo, puedes seguir mostrando los cambios
-    while scraper_process.poll() is None:  # Mientras el proceso del scraper esté activo
-        time.sleep(1)  # Espera 1 segundo
-        display_changes()  # Mostrar los cambios en la interfaz
-
     st.session_state["scraper_running"] = False
-    display_changes()
 
+def parse_new_properties_from_log(log_line):
+    """
+    Parsea los logs para encontrar propiedades nuevas
+    """
+    # Ajusta este patrón según el formato exacto de tus logs
+    pattern = r'New property added: (.+)'
+    match = re.search(pattern, log_line)
+    
+    if match:
+        return match.group(1).strip()
+    return None
+
+def run_scraper():
+    """
+    Ejecuta el scraper y captura los logs
+    """
+    # Reiniciar lista de propiedades nuevas
+    st.session_state["new_properties"] = []
+    st.session_state["scraper_running"] = True
+
+    try:
+        # Ejecutar el comando de scraping y capturar la salida
+        result = subprocess.run(
+            ["python", "manage.py", "tecnopiso"], 
+            capture_output=True, 
+            text=True,
+            check=True
+        )
+
+        # Procesar cada línea de log
+        for line in result.stdout.split('\n'):
+            new_prop = parse_new_properties_from_log(line)
+            if new_prop:
+                st.session_state["new_properties"].append(new_prop)
+                #st.write(f"Nueva propiedad detectada: {new_prop}")
+
+    except subprocess.CalledProcessError as e:
+        st.error(f"Error durante el scraping: {e}")
+        st.error(f"Salida de error: {e.stderr}")
+    finally:
+        st.session_state["scraper_running"] = False
+
+# Título de la aplicación
 st.title("Tecnocasa Property Scraper")
 
-# Botón para iniciar el scraping
+# Botón para iniciar scraping
 if st.button("Iniciar scraping"):
     with st.spinner("Ejecutando scraping..."):
         run_scraper()
 
-# Ciclo para actualizar la vista de los cambios solo si el scraper está corriendo
-while st.session_state["scraper_running"]:
-    display_changes()  # Mostrar los cambios en la interfaz
-    time.sleep(1)  # Esperar 1 segundo para volver a comprobar cambios
+# Mostrar propiedades nuevas
+if st.session_state.get("new_properties"):
+    st.write("### Nuevas Propiedades:")
+    for prop in st.session_state["new_properties"]:
+        st.write(f"- {prop}")
 
-# Una vez que el scraper ha terminado, mostramos los cambios finales
-if st.session_state["scraper_initiated"] and not st.session_state["scraper_running"]:
-    display_changes()
-    st.write("### Scraping completado")
-
-
-if st.button("Mostrar Database"):
-    st.write('Estos son mis pisos desde mi API:')
-    response = requests.get('http://localhost:8000/tecnocasa/')
-    
-    if response.status_code == 200:
-        properties = response.json()
-        for prop in properties:
-            st.write(f"**Precio**: {prop['price']}") 
-            st.write(f"**Ubicación**: {prop['location']}")
-            st.write(f"**Superficie**: {prop['surface']}")
-            st.write(f"**Tipo**: {prop['type']}")
-            st.write(f"**Agencia**: {prop['agency']}")
-            st.write(f"**URL**: {prop['url']}")
-            st.write(f"**Fecha de primera publicación**: {prop['first_seen']}")
-            st.write(f"**Última actualización**: {prop['last_updated']}")
-            st.write("---")  # Separador entre propiedades
-    else:
-        st.write('No se encontraron pisos') 
-
-# GEMINI NO VA
-# import streamlit as st
-# import time
-# import django
-# import os
-# import sys
-# import requests
-
-# sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-# os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'flatscrap.settings')
-# django.setup()
-# from tecnocasa.services.pisoscrape import TecnocasaScraper
-
-# if "changes" not in st.session_state:
-#     st.session_state["changes"] = []
-# if "scraper_running" not in st.session_state:
-#     st.session_state["scraper_running"] = False
-# if "scraper_initiated" not in st.session_state:
-#     st.session_state["scraper_initiated"] = False
-
-# # Función personalizada para manejar los logs de cambios en la base de datos
-# def custom_log_handler(message):
-#     if "New property added" in message or "Property updated" in message:
-#         st.session_state["changes"].append(message)
-
-# @st.cache_resource
-# def get_scraper():
-#     return TecnocasaScraper()
-
-# # Función para ejecutar el scraper
-# def run_scraper():
-#     st.session_state["scraper_running"] = True
-#     st.session_state["scraper_initiated"] = True
-#     scraper = get_scraper()
-
-#     # Sobrescribir el logger del scraper para almacenar cambios en session_state
-#     scraper.logger.info = custom_log_handler
-#     try:
-#         scraper.scrape()
-#     finally:
-#         scraper.close()  # Asegurar el cierre del navegador
-#     st.session_state["scraper_running"] = False
-
-# st.title("Tecnocasa Property Scraper")
-
-# # Botón para iniciar el scraping
-# if st.button("Iniciar scraping"):
-#     with st.spinner("Ejecutando scraping..."):
-#         run_scraper()
-
-# def display_changes():
-#     if st.session_state["changes"]:
-#         st.write("### Cambios en la base de datos:")
-#         for change in st.session_state["changes"]:
-#             st.write(f"- {change}")
-
-# # Ciclo para actualizar la vista de los cambios solo si el scraper está corriendo
-# while st.session_state["scraper_running"]:
-#     display_changes()
-#     time.sleep(1)
-
-# # Una vez que el scraper ha terminado, mostramos los cambios finales
-# if st.session_state["scraper_initiated"] and not st.session_state["scraper_running"]:
-#     display_changes()
-#     st.write("### Scraping completado")
-
-# if st.button("Mostrar Database"):
-#     st.write('Estos son mis pisos desde mi API:')
-#     response = requests.get('http://localhost:8000/tecnocasa/')
-
-#     if response.status_code == 200:
-#         properties = response.json()
-#         for prop in properties:
-#             st.write(f"**Precio**: {prop['price']}")
-#             st.write(f"**Ubicación**: {prop['location']}")
-#             st.write(f"**Superficie**: {prop['surface']}")
-#             st.write(f"**Tipo**: {prop['type']}")
-#             st.write(f"**Agencia**: {prop['agency']}")
-#             st.write(f"**URL**: {prop['url']}")
-#             st.write(f"**Fecha de primera publicación**: {prop['first_seen']}")
-#             st.write(f"**Última actualización**: {prop['last_updated']}")
-#             st.write("---")
-#     else:
-#         st.write('No se encontraron pisos')
-
-
-
-
+# Botón para mostrar base de datos completa
+if st.button("Mostrar Todos los Pisos"):
+    try:
+        response = requests.get('http://localhost:8000/tecnocasa/')
+        
+        if response.status_code == 200:
+            properties = response.json()
+            st.write(f"Total de propiedades: {len(properties)}")
+            
+            for prop in properties:
+                with st.expander(f"Piso en {prop.get('location', 'Sin ubicación')}"):
+                    st.write(f"**Precio**: {prop.get('price', 'No disponible')}") 
+                    st.write(f"**Ubicación**: {prop.get('location', 'No disponible')}")
+                    st.write(f"**Superficie**: {prop.get('surface', 'No disponible')}")
+                    st.write(f"**Tipo**: {prop.get('type', 'No disponible')}")
+        else:
+            st.error(f'Error al recuperar propiedades: {response.status_code}')
+    except Exception as e:
+        st.error(f'Error de conexión: {e}')
 
 
 

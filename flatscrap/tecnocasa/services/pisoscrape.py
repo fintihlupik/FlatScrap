@@ -5,16 +5,13 @@ from selenium.webdriver.support.ui import WebDriverWait     # Permite la espera 
 from selenium.webdriver.support import expected_conditions as EC   # Condiciones predefinidas para usar con WebDriverWait
 import time
 import logging
-from selenium.webdriver.common.keys import Keys
 from django.utils import timezone
 from tecnocasa.models import Property
 from logging.handlers import RotatingFileHandler
-from selenium.common.exceptions import ElementClickInterceptedException
 from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.firefox.service import Service
 from selenium.webdriver.firefox.options import Options
-import os
-import signal
+
 
 
 
@@ -51,22 +48,13 @@ class TecnocasaScraper:
         self.logger.info("Logger configurado correctamente")
         self.logger.debug("Nivel de logging establecido en DEBUG")
 
-    def configure_driver(self):
-        # options = uc.ChromeOptions()
-        # options.add_argument("--disable-blink-features=AutomationControlled")
-        # return uc.Chrome(options=options)
-    
+    def configure_driver(self):   
         options = Options()
         options.add_argument('--headless')  # Ejecutar en modo headless
         options.add_argument('--no-sandbox')  # Requerido para algunos servidores
         options.add_argument('--disable-dev-shm-usage')  # Para evitar errores de memoria
 
-        # Proporcionar la ruta del binario de Firefox
-        #options.binary_location = "C:\\Program Files\\Mozilla Firefox\\firefox.exe" ######################## Ruta de Windows quitar
-        # Configurar el servicio de GeckoDriver
         service = Service("/usr/local/bin/geckodriver")
-        #service = Service("C:\\Program Files\\geckodriver\\geckodriver.exe") ######################## Ruta de Windows quitar
-        # Crear el WebDriver de Firefox
         return webdriver.Firefox(service=service, options=options)
     
     def handle_cookies(self):
@@ -111,15 +99,12 @@ class TecnocasaScraper:
                         url = card.find_element(By.CSS_SELECTOR, "a").get_attribute("href")
                         type = "Apartment"
                         agency = "Tecnocasa"
-
-                        #self.logger.info(f"Datos extraídos - Ubicación: {location}, Precio: {price}, Superficie: {surface}, URL: {url}")
                         self.update_or_create_property(price, location, surface, type, agency, url)
                     except Exception as e:
                         self.logger.error(f"Error en tarjeta: {str(e)}", exc_info=True)
                         continue
         except Exception as e:
             self.logger.critical(f"Error crítico en process_page: {str(e)}", exc_info=True)
-            #self.driver.save_screenshot("error_page.png")
             raise
         
 
@@ -139,6 +124,7 @@ class TecnocasaScraper:
                 property.last_updated = timezone.now()  
                 property.save()
                 self.logger.info(f"Property updated: - {location} , - {price}, - {surface}, - {url}")
+                print(f"Property updated: - {location} , - {price}, - {surface}, - {url}")
                 return f"Property updated: {location}"
             else:
                 self.logger.info(f"No changes detected for property: - {location}, - {url}")
@@ -156,12 +142,12 @@ class TecnocasaScraper:
                 last_updated=timezone.now()
             )
             self.logger.info(f"New property added: - {location}, - {price}, - {surface}, - {url}")
+            print(f"New property added: - {location}, - {price}, - {surface}, - {url}")
             return f"New property added: {location}"  
 
         
     def go_to_next_page(self):
         try:
-            #self.logger.debug("Buscando botón de siguiente página")
             current_page = self.driver.current_url
             self.logger.debug(f"URL actual: {current_page}")
 
